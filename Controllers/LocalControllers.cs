@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using EscalaSegurancaAPI.DTOs;
 using EscalaSegurancaAPI.Models;
+using EscalaSegurancaAPI.Filters;
+using Newtonsoft.Json;
 
 namespace EscalaSeguranca.Controllers
 {
@@ -16,7 +18,7 @@ namespace EscalaSeguranca.Controllers
         private readonly IMapper _mapper;
         private readonly ILogger<LocalController> _logger;
 
-        public LocalController(IUnitOfWork uof, 
+        public LocalController(IUnitOfWork uof,
             IMapper mapper, ILogger<LocalController> logger)
         {
             _uof = uof;
@@ -65,7 +67,7 @@ namespace EscalaSeguranca.Controllers
                 _logger.LogError(e, "Erro ao buscar local.");
                 return StatusCode(500);
             }
-            
+
         }
 
         // POST: api/Local
@@ -84,7 +86,7 @@ namespace EscalaSeguranca.Controllers
             if(!sucesso)
                 return StatusCode(500, "Erro ao criar local.");
 
-            return CreatedAtAction(nameof(Get), 
+            return CreatedAtAction(nameof(Get),
                 new { id = local.LocalId }, localDTO);
             }
             catch (Exception e)
@@ -148,6 +150,42 @@ namespace EscalaSeguranca.Controllers
                 _logger.LogError(e, "Erro ao excluir local.");
                 return StatusCode(500);
             }
+        }
+
+        // GET: api/Local/pagination
+        [HttpGet("pagination")]
+        public ActionResult<IEnumerable<LocalDTO>> Get([FromQuery] PagedParameters parameters)
+        {
+            try
+            {
+                PagedList<Local> locais = _uof.LocalRepository.Get(parameters);
+                if (locais == null)
+                    return NotFound("Não existem locais.");
+
+                return ObterLocais(locais);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Erro ao buscar locais.");
+                return StatusCode(500);
+            }
+        }
+
+        private ActionResult<IEnumerable<LocalDTO>> ObterLocais(PagedList<Local> locais)
+        {
+            var metadata = new
+            {
+                locais.TotalCount,
+                locais.PageSize,
+                locais.CurrentPage,
+                locais.TotalPages,
+                locais.HasNext,
+                locais.HasPrevious
+            };
+            Response.Headers.Append("X-Pagination", JsonConvert.SerializeObject(metadata));
+
+            var locaisDTO = _mapper.Map<IEnumerable<LocalDTO>>(locais);
+            return Ok(locaisDTO);
         }
     }
 }

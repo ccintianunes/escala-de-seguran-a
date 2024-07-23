@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using EscalaSegurancaAPI.DTOs;
 using EscalaSegurancaAPI.Models;
+using EscalaSegurancaAPI.Filters;
+using Newtonsoft.Json;
 
 namespace EscalaSeguranca.Controllers
 {
@@ -16,7 +18,7 @@ namespace EscalaSeguranca.Controllers
         private readonly IMapper _mapper;
         private readonly ILogger<EscalaController> _logger;
 
-        public EscalaController(IUnitOfWork uof, 
+        public EscalaController(IUnitOfWork uof,
             IMapper mapper, ILogger<EscalaController> logger)
         {
             _uof = uof;
@@ -83,7 +85,7 @@ namespace EscalaSeguranca.Controllers
             if(!sucesso)
                 return StatusCode(500, "Erro ao criar escala.");
 
-            return CreatedAtAction(nameof(Get), 
+            return CreatedAtAction(nameof(Get),
                 new { id = escala.EscalaId }, escalaDTO);
             }
             catch (Exception e)
@@ -147,6 +149,42 @@ namespace EscalaSeguranca.Controllers
                 _logger.LogError(e, "Erro ao excluir escala.");
                 return StatusCode(500);
             }
+        }
+
+        // GET: api/Escala/pagination
+        [HttpGet("pagination")]
+        public ActionResult<IEnumerable<EscalaDTO>> Get([FromQuery] PagedParameters parameters)
+        {
+            try
+            {
+                PagedList<Escala> escalas = _uof.EscalaRepository.Get(parameters);
+                if (escalas == null)
+                    return NotFound("Não existem escalas.");
+
+                return ObterEscalas(escalas);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Erro ao buscar escalas.");
+                return StatusCode(500);
+            }
+        }
+
+        private ActionResult<IEnumerable<EscalaDTO>> ObterEscalas(PagedList<Escala> escalas)
+        {
+            var metadata = new
+            {
+                escalas.TotalCount,
+                escalas.PageSize,
+                escalas.CurrentPage,
+                escalas.TotalPages,
+                escalas.HasNext,
+                escalas.HasPrevious
+            };
+            Response.Headers.Append("X-Pagination", JsonConvert.SerializeObject(metadata));
+
+            var escalasDTO = _mapper.Map<IEnumerable<EscalaDTO>>(escalas);
+            return Ok(escalasDTO);
         }
     }
 }

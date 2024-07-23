@@ -1,3 +1,5 @@
+using EscalaSegurancaAPI.Filters;
+
 namespace EscalaSeguranca.Repositories;
 
 public interface IRepository<T> where T : class
@@ -7,5 +9,5 @@ public interface IRepository<T> where T : class
     bool Add(T entity);
     bool Update(T entity);
     void Remove(T entity);
-
+    PagedList<T> Get(PagedParameters parameters);
 }

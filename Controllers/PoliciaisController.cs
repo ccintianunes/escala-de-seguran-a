@@ -7,6 +7,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using EscalaSegurancaAPI.DTOs;
 using EscalaSegurancaAPI.Models;
+using EscalaSegurancaAPI.Filters;
+using Newtonsoft.Json;
 
 namespace EscalaSeguranca.Controllers
 {
@@ -18,7 +20,7 @@ namespace EscalaSeguranca.Controllers
         private readonly IMapper _mapper;
         private readonly ILogger<PolicialController> _logger;
 
-        public PolicialController(IUnitOfWork uof, 
+        public PolicialController(IUnitOfWork uof,
             IMapper mapper, ILogger<PolicialController> logger)
         {
             _uof = uof;
@@ -85,7 +87,7 @@ namespace EscalaSeguranca.Controllers
             if(!sucesso)
                 return StatusCode(500, "Erro ao criar policial.");
 
-            return CreatedAtAction(nameof(Get), 
+            return CreatedAtAction(nameof(Get),
                 new { id = policial.PolicialId }, policialDTO);
             }
             catch (Exception e)
@@ -149,6 +151,42 @@ namespace EscalaSeguranca.Controllers
                 _logger.LogError(e, "Erro ao excluir policial.");
                 return StatusCode(500);
             }
+        }
+
+        // GET: api/Policial/pagination
+        [HttpGet("pagination")]
+        public ActionResult<IEnumerable<PolicialDTO>> Get([FromQuery] PagedParameters parameters)
+        {
+            try
+            {
+                PagedList<Policial> policiais = _uof.PolicialRepository.Get(parameters);
+                if (policiais == null)
+                    return NotFound("Não existem policiais.");
+
+                return ObterPoliciais(policiais);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Erro ao buscar escalas.");
+                return StatusCode(500);
+            }
+        }
+
+        private ActionResult<IEnumerable<PolicialDTO>> ObterPoliciais(PagedList<Policial> policiais)
+        {
+            var metadata = new
+            {
+                policiais.TotalCount,
+                policiais.PageSize,
+                policiais.CurrentPage,
+                policiais.TotalPages,
+                policiais.HasNext,
+                policiais.HasPrevious
+            };
+            Response.Headers.Append("X-Pagination", JsonConvert.SerializeObject(metadata));
+
+            var policiaisDTO = _mapper.Map<IEnumerable<PolicialDTO>>(policiais);
+            return Ok(policiaisDTO);
         }
     }
 }

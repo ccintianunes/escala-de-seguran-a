@@ -1,6 +1,7 @@
 
 using ApiCatalogo.Context;
 using Microsoft.EntityFrameworkCore;
+using EscalaSegurancaAPI.Filters;
 
 namespace EscalaSeguranca.Repositories;
 
@@ -12,7 +13,7 @@ public class Repository<T> : IRepository<T> where T : class
     {
         _context = context;
     }
-    
+
     public async Task<IEnumerable<T>> GetAll()
     {
         return await _context.Set<T>().ToListAsync();
@@ -38,5 +39,12 @@ public class Repository<T> : IRepository<T> where T : class
     public void Remove(T entity)
     {
         _context.Set<T>().Remove(entity);
+    }
+
+    public PagedList<T> Get(PagedParameters parameters)
+    {
+        IQueryable<T> items = _context.Set<T>().AsNoTracking().AsQueryable();
+        return PagedList<T>
+            .ToPagedList(items, parameters.PageNumber, parameters.PageSize);
     }
 }

@@ -4,6 +4,8 @@ using EscalaSeguranca.Repositories;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using EscalaSegurancaAPI.DTOs;
+using EscalaSegurancaAPI.Filters;
+using Newtonsoft.Json;
 
 namespace EscalaSeguranca.Controllers
 {
@@ -15,7 +17,7 @@ namespace EscalaSeguranca.Controllers
         private readonly IMapper _mapper;
         private readonly ILogger<MarcacaoEscalaController> _logger;
 
-        public MarcacaoEscalaController(IUnitOfWork uof, 
+        public MarcacaoEscalaController(IUnitOfWork uof,
             IMapper mapper, ILogger<MarcacaoEscalaController> logger)
         {
             _uof = uof;
@@ -146,5 +148,42 @@ namespace EscalaSeguranca.Controllers
                 return StatusCode(500);
             }
         }
+
+        // GET: api/MarcacaoEscala/pagination
+        [HttpGet("pagination")]
+        public ActionResult<IEnumerable<MarcacaoEscalaDTO>> Get([FromQuery] PagedParameters parameters)
+        {
+            try
+            {
+                PagedList<MarcacaoEscala> marcacoesEscala = _uof.MarcacaoEscalaRepository.Get(parameters);
+                if (marcacoesEscala == null)
+                    return NotFound("Não existem marcações de escala.");
+
+                return ObterMarcacoesEscala(marcacoesEscala);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Erro ao buscar escalas.");
+                return StatusCode(500);
+            }
+        }
+
+        private ActionResult<IEnumerable<MarcacaoEscalaDTO>> ObterMarcacoesEscala(PagedList<MarcacaoEscala> marcacoesEscala)
+        {
+            var metadata = new
+            {
+                marcacoesEscala.TotalCount,
+                marcacoesEscala.PageSize,
+                marcacoesEscala.CurrentPage,
+                marcacoesEscala.TotalPages,
+                marcacoesEscala.HasNext,
+                marcacoesEscala.HasPrevious
+            };
+            Response.Headers.Append("X-Pagination", JsonConvert.SerializeObject(metadata));
+
+            var marcacoesEscalaDTO = _mapper.Map<IEnumerable<MarcacaoEscalaDTO>>(marcacoesEscala);
+            return Ok(marcacoesEscalaDTO);
+        }
+
     }
 }
