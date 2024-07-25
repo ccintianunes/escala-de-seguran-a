@@ -19,14 +19,14 @@ public class Repository<T> : IRepository<T> where T : class
         return await _context.Set<T>().ToListAsync();
     }
 
-    public T GetById(int id)
+    public async Task<T?> GetById(int id)
     {
-        return _context.Set<T>().Find(id);
+        return await _context.Set<T>().FindAsync(id);
     }
 
-    public bool Add(T entity)
+    public async Task<bool> Add(T entity)
     {
-        _context.Set<T>().Add(entity);
+        await _context.Set<T>().AddAsync(entity);
         return true;
     }
 
