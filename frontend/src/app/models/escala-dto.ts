@@ -18,7 +18,7 @@ export interface EscalaDTO {
   }
   
   export interface PolicialDTO {
-    Id: number;
+    policialId: number;
     cpf: string;
     nome: string;
     telefone: string;

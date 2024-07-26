@@ -7,7 +7,7 @@ import { MarcacaoEscalaDTO } from '../models/escala-dto';
   providedIn: 'root'
 })
 export class MarcacaoEscalaService {
-  private apiUrl = 'http://seu-api-url/api/MarcacaoEscala';
+  private apiUrl = 'http://localhost:5115/api/MarcacaoEscala';
 
   constructor(private http: HttpClient) { }
 

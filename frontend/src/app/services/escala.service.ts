@@ -7,9 +7,9 @@ import { EscalaDTO } from '../models/escala-dto';
   providedIn: 'root'
 })
 export class EscalaService {
-  private apiUrl = 'http://seu-api-url/api/Escala';
+  private apiUrl = 'http://localhost:5115/api/Escala';
 
-  constructor(private http: HttpClient) { }
+  constructor(private http: HttpClient) {}
 
   getEscalas(): Observable<EscalaDTO[]> {
     return this.http.get<EscalaDTO[]>(this.apiUrl);

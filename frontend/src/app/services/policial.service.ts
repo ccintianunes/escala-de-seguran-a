@@ -7,9 +7,9 @@ import { PolicialDTO } from '../models/escala-dto';
   providedIn: 'root'
 })
 export class PolicialService {
-  private apiUrl = 'http://seu-api-url/api/Policial';
+  private apiUrl = 'http://localhost:5115/api/Policial';
 
-  constructor(private http: HttpClient) { }
+  constructor(private http: HttpClient) {}
 
   getPoliciais(): Observable<PolicialDTO[]> {
     return this.http.get<PolicialDTO[]>(this.apiUrl);

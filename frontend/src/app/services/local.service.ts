@@ -7,9 +7,9 @@ import { LocalDTO } from '../models/escala-dto';
   providedIn: 'root'
 })
 export class LocalService {
-  private apiUrl = 'http://seu-api-url/api/Local';
+  private apiUrl = 'http://localhost:5115/api/Local';
 
-  constructor(private http: HttpClient) { }
+  constructor(private http: HttpClient) {}
 
   getLocais(): Observable<LocalDTO[]> {
     return this.http.get<LocalDTO[]>(this.apiUrl);
