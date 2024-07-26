@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("EscalaSegurancaAPI")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+3a7e993012ec740b74ec7efcd6746b201efdc55c")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+e1262cb2fa42c249d1c4a6bc55df9c765d318e04")]
 [assembly: System.Reflection.AssemblyProductAttribute("EscalaSegurancaAPI")]
 [assembly: System.Reflection.AssemblyTitleAttribute("EscalaSegurancaAPI")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
