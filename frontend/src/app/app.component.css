@@ -1,0 +1,20 @@
+/* Estilos para a barra de navegação */
+.navbar {
+    margin-bottom: 20px;
+  }
+  
+  /* Estilos para os links da barra de navegação */
+  .nav-link {
+    color: #007bff;
+  }
+  
+  .nav-link:hover {
+    color: #0056b3;
+    text-decoration: none;
+  }
+  
+  /* Estilos para a marca do navbar */
+  .navbar-brand {
+    font-weight: bold;
+    color: #007b
+  }

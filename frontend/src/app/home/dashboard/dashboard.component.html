@@ -1,11 +1,42 @@
-<p>dashboard works!</p>
-<div class="container">
-    <h1>Bem-vindo ao EscalaSegurancaAPI</h1>
-    <ul class="list-group">
-      <li class="list-group-item"><a routerLink="/home/api-escala">Escala</a></li>
-      <li class="list-group-item"><a routerLink="/home/api-local">Local</a></li>
-      <li class="list-group-item"><a routerLink="/home/api-marcacao-escala">MarcacaoEscala</a></li>
-      <li class="list-group-item"><a routerLink="/home/api-policial">Policial</a></li>
-    </ul>
+<div class="marcacao-escala-list">
+  <h2>Marcações de Escala</h2>
+  <ul>
+    <li *ngFor="let marcacao of marcacoesEscala">
+      ID: {{marcacao.marcacaoEscalaId}}, Policial ID: {{marcacao.policialId}}, Escala ID: {{marcacao.escalaId}}, Local ID: {{marcacao.localId}}
+    </li>
+  </ul>
+</div>
+
+<div class="section-container">
+  <div class="section">
+    <h3>Marcação de Escala</h3>
+    <div class="options">
+      <button (click)="navigateTo('/api-marcacao-escala')">Cadastrar Nova Marcação</button>
+      <button (click)="navigateTo('/api-marcacao-escala')">Editar Marcação</button>
+    </div>
   </div>
-  
+
+  <div class="section">
+    <h3>Policial</h3>
+    <div class="options">
+      <button (click)="navigateTo('/api-policial')">Cadastrar Novo Policial</button>
+      <button (click)="navigateTo('/api-policial')">Editar Dados do Policial</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <h3>Local</h3>
+    <div class="options">
+      <button (click)="navigateTo('/api-local')">Cadastrar Novo Local</button>
+      <button (click)="navigateTo('/api-local')">Editar Local</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <h3>Escala</h3>
+    <div class="options">
+      <button (click)="navigateTo('/api-escala')">Cadastrar Nova Escala</button>
+      <button (click)="navigateTo('/api-escala')">Editar Escala</button>
+    </div>
+  </div>
+</div>

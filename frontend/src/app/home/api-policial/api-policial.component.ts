@@ -9,32 +9,16 @@ import { PolicialDTO } from '../../models/escala-dto';
 })
 export class ApiPolicialComponent implements OnInit {
   policiais: PolicialDTO[] = [];
-  selectedPolicial: PolicialDTO | null = null;
 
   constructor(private policialService: PolicialService) {}
 
   ngOnInit(): void {
-    this.getPoliciais();
+    this.policialService.getPoliciais().subscribe(data => {
+      this.policiais = data;
+    });
   }
 
-  getPoliciais(): void {
-    this.policialService.getPoliciais().subscribe(policiais => this.policiais = policiais);
-  }
-
-  selectPolicial(policial: PolicialDTO): void {
-    this.selectedPolicial = policial;
-  }
-
-  savePolicial(policial: PolicialDTO): void {
-    if (policial.Id) {
-      this.policialService.updatePolicial(policial.Id, policial).subscribe(() => this.getPoliciais());
-    } else {
-      this.policialService.createPolicial(policial).subscribe(() => this.getPoliciais());
-    }
-    this.selectedPolicial = null;
-  }
-
-  deletePolicial(id: number): void {
-    this.policialService.deletePolicial(id).subscribe(() => this.getPoliciais());
+  navigateTo(route: string) {
+    window.location.href = route;
   }
 }

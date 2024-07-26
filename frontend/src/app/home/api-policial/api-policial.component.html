@@ -1,1 +1,18 @@
-<p>api-policial works!</p>
+<div class="policial-list">
+  <h2>Lista de Policiais</h2>
+  <ul>
+    <li *ngFor="let policial of policiais">
+      ID: {{policial.Id}}, Nome: {{policial.nome}}, CPF: {{policial.cpf}}, Telefone: {{policial.telefone}}
+    </li>
+  </ul>
+</div>
+
+<div class="section-container">
+  <div class="section">
+    <h3>Policial</h3>
+    <div class="options">
+      <button (click)="navigateTo('/api-policial')">Cadastrar Novo Policial</button>
+      <button (click)="navigateTo('/api-policial')">Editar Dados do Policial</button>
+    </div>
+  </div>
+</div>

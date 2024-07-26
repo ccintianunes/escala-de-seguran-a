@@ -17,6 +17,7 @@ const routes: Routes = [
   { path: 'home/api-policial', component: ApiPolicialComponent },
 ];
 
+
 @NgModule({
   imports: [RouterModule.forRoot(routes)],
   exports: [RouterModule]
