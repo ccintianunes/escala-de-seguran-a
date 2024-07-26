@@ -1,0 +1,38 @@
+.locais-list {
+    margin-bottom: 20px;
+  }
+  
+  .locais-list ul {
+    list-style-type: none;
+    padding: 0;
+  }
+  
+  .locais-list li {
+    padding: 5px;
+    cursor: pointer;
+    border: 1px solid #ccc;
+    margin-bottom: 5px;
+  }
+  
+  .locais-list li:hover {
+    background-color: #eee;
+  }
+  
+  .local-form {
+    border: 1px solid #ccc;
+    padding: 10px;
+  }
+  
+  .local-form form {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .local-form form label {
+    margin-top: 10px;
+  }
+  
+  .local-form form input {
+    margin-bottom: 10px;
+  }
+  

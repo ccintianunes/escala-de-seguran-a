@@ -1,0 +1,22 @@
+<div class="locais-list">
+    <h2>Lista de Locais</h2>
+    <ul>
+      <li *ngFor="let local of locais" (click)="selectLocal(local)">
+        {{ local.nome }}
+      </li>
+    </ul>
+    <button (click)="selectLocal({})">Novo Local</button>
+  </div>
+  
+  <div *ngIf="selectedLocal" class="local-form">
+    <h2>{{ selectedLocal.id ? 'Editar Local' : 'Novo Local' }}</h2>
+    <form (ngSubmit)="saveLocal(selectedLocal)">
+      <label for="nome">Nome:</label>
+      <input type="text" id="nome" [(ngModel)]="selectedLocal.nome" name="nome" required>
+      
+      <button type="submit">Salvar</button>
+      <button type="button" (click)="deleteLocal(selectedLocal.id)" *ngIf="selectedLocal.id">Excluir</button>
+      <button type="button" (click)="selectedLocal = null">Cancelar</button>
+    </form>
+  </div>
+  

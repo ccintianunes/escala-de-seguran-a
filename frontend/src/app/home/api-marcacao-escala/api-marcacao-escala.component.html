@@ -1,0 +1,22 @@
+<div class="marcacoes-list">
+    <h2>Lista de Marcações de Escala</h2>
+    <ul>
+      <li *ngFor="let marcacao of marcacoes" (click)="selectMarcacao(marcacao)">
+        {{ marcacao.nome }}
+      </li>
+    </ul>
+    <button (click)="selectMarcacao({})">Nova Marcação</button>
+  </div>
+  
+  <div *ngIf="selectedMarcacao" class="marcacao-form">
+    <h2>{{ selectedMarcacao.id ? 'Editar Marcação' : 'Nova Marcação' }}</h2>
+    <form (ngSubmit)="saveMarcacao(selectedMarcacao)">
+      <label for="nome">Nome:</label>
+      <input type="text" id="nome" [(ngModel)]="selectedMarcacao.nome" name="nome" required>
+      
+      <button type="submit">Salvar</button>
+      <button type="button" (click)="deleteMarcacao(selectedMarcacao.id)" *ngIf="selectedMarcacao.id">Excluir</button>
+      <button type="button" (click)="selectedMarcacao = null">Cancelar</button>
+    </form>
+  </div>
+  

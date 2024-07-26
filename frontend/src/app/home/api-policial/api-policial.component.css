@@ -1,0 +1,38 @@
+.policiais-list {
+    margin-bottom: 20px;
+  }
+  
+  .policiais-list ul {
+    list-style-type: none;
+    padding: 0;
+  }
+  
+  .policiais-list li {
+    padding: 5px;
+    cursor: pointer;
+    border: 1px solid #ccc;
+    margin-bottom: 5px;
+  }
+  
+  .policiais-list li:hover {
+    background-color: #eee;
+  }
+  
+  .policial-form {
+    border: 1px solid #ccc;
+    padding: 10px;
+  }
+  
+  .policial-form form {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .policial-form form label {
+    margin-top: 10px;
+  }
+  
+  .policial-form form input {
+    margin-bottom: 10px;
+  }
+  

@@ -1,0 +1,38 @@
+.marcacoes-list {
+    margin-bottom: 20px;
+  }
+  
+  .marcacoes-list ul {
+    list-style-type: none;
+    padding: 0;
+  }
+  
+  .marcacoes-list li {
+    padding: 5px;
+    cursor: pointer;
+    border: 1px solid #ccc;
+    margin-bottom: 5px;
+  }
+  
+  .marcacoes-list li:hover {
+    background-color: #eee;
+  }
+  
+  .marcacao-form {
+    border: 1px solid #ccc;
+    padding: 10px;
+  }
+  
+  .marcacao-form form {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .marcacao-form form label {
+    margin-top: 10px;
+  }
+  
+  .marcacao-form form input {
+    margin-bottom: 10px;
+  }
+  
