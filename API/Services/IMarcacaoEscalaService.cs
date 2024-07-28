@@ -11,5 +11,6 @@ namespace EscalaSegurancaAPI.Services
         Task<bool> Update(MarcacaoEscala marcacaoEscala);
         MarcacaoEscala Delete(MarcacaoEscala marcacaoEscala);
         Task<PagedList<MarcacaoEscala>> GetAll(PagedParameters parameters);
+        
     }
 }

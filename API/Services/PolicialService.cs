@@ -91,6 +91,7 @@ namespace EscalaSegurancaAPI.Services
         private async Task<bool> ExisteMarcacaoVinculada(int id)
         {
             var marcacoes = await _uof.MarcacaoEscalaRepository.GetAll();
+            
             return marcacoes.Any(m => m.PolicialId == id);
         }
     }

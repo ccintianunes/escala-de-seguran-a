@@ -99,7 +99,6 @@ namespace EscalaSegurancaAPI.Services
                 throw new ArgumentNullException("Escala não encontrada.");
 
             var marcacoes = await GetAll();
-            
             marcacoes = marcacoes.Where(m => m.PolicialId == policialId);
             if(id != 0)
                 marcacoes = marcacoes.Where(m => m.MarcacaoEscalaId != id);

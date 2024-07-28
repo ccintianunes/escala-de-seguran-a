@@ -11,5 +11,6 @@ namespace EscalaSegurancaAPI.Services
         Task<bool> Update(Local local);
         Task<Local> Delete(Local local);
         Task<PagedList<Local>> GetAll(PagedParameters parameters);
+        
     }
 }

@@ -11,5 +11,6 @@ namespace EscalaSegurancaAPI.Services
         Task<bool> Update(Policial policial);
         Task<Policial> Delete(Policial policial);
         Task<PagedList<Policial>> GetAll(PagedParameters parameters);
+        
     }
 }
