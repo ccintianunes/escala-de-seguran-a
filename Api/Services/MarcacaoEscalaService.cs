@@ -1,6 +1,7 @@
 using EscalaSeguranca.Repositories;
 using EscalaSegurancaAPI.Filters;
 using EscalaSegurancaAPI.Models;
+using EscalaSegurancaAPI.DTOs;
 
 namespace EscalaSegurancaAPI.Services
 {
@@ -13,8 +14,6 @@ namespace EscalaSegurancaAPI.Services
         }
         public async Task<bool> Create(MarcacaoEscala marcacaoEscala)
         {
-            marcacaoEscala = await CompletarMarcacaoEscala(marcacaoEscala);
-
             var marcacaoDuplicada = await ExisteMarcacaoDuplicada(marcacaoEscala.PolicialId, marcacaoEscala.EscalaId, 0);
             if (marcacaoDuplicada)
                 throw new InvalidOperationException("Conflito de escala!");
@@ -33,31 +32,41 @@ namespace EscalaSegurancaAPI.Services
             return marcacaoEscala;
         }
 
-        public async Task<IEnumerable<MarcacaoEscala>> GetAll()
+        public async Task<IEnumerable<MarcacaoEscalaDTOResponse>> GetAll()
         {
             var marcacoesEscala = await _uof.MarcacaoEscalaRepository.GetAll();
             if (marcacoesEscala is null)
                 throw new ArgumentNullException("Não existem marcações.");
+            
+            IList<MarcacaoEscalaDTOResponse> responseDTO = new List<MarcacaoEscalaDTOResponse>();
+            foreach (MarcacaoEscala m in marcacoesEscala) {
+                var marcacaoDTO = await CompletarMarcacaoEscala(m);
+                responseDTO.Add(marcacaoDTO);
+            }
 
-            return marcacoesEscala;
+            return responseDTO.AsEnumerable();
         }
 
-        public async Task<PagedList<MarcacaoEscala>> GetAll(PagedParameters parameters)
+        public async Task<PagedList<MarcacaoEscalaDTOResponse>> GetAll(PagedParameters parameters)
         {
-            PagedList<MarcacaoEscala> marcacoesEscala = await _uof.MarcacaoEscalaRepository.Get(parameters);
+            IEnumerable<MarcacaoEscalaDTOResponse> items = await GetAll();
+
+            var marcacoesEscala = PagedList<MarcacaoEscalaDTOResponse>
+                .ToPagedList(items.AsQueryable(), parameters.PageNumber, parameters.PageSize);
+
             if (marcacoesEscala is null)
                 throw new ArgumentNullException("Não existem marcações.");
 
             return marcacoesEscala;
         }
 
-        public async Task<MarcacaoEscala> GetById(int id)
+        public async Task<MarcacaoEscalaDTOResponse> GetById(int id)
         {
             var marcacaoEscala = await _uof.MarcacaoEscalaRepository.GetById(id);
             if (marcacaoEscala is null)
                 throw new ArgumentNullException("Marcação não encontrado.");
 
-            return marcacaoEscala;
+            return await CompletarMarcacaoEscala(marcacaoEscala);
         }
 
         public async Task<bool> Update(MarcacaoEscala marcacaoEscala)
@@ -69,28 +78,24 @@ namespace EscalaSegurancaAPI.Services
             if (marcacaoDuplicada)
                 throw new InvalidOperationException("Conflito de escala!");
          
-            marcacaoEscala = await CompletarMarcacaoEscala(marcacaoEscala);
-            
             var sucesso = _uof.MarcacaoEscalaRepository.Update(marcacaoEscala);
             _uof.Complete();
 
             return sucesso;
         }
 
-        private async Task<MarcacaoEscala> CompletarMarcacaoEscala(MarcacaoEscala marcacaoEscala){
+        private async Task<MarcacaoEscalaDTOResponse> CompletarMarcacaoEscala(MarcacaoEscala marcacaoEscala){
             var escala = await _uof.EscalaRepository.GetById(marcacaoEscala.EscalaId);
-            marcacaoEscala.Escala = escala;
-
             var policial = await _uof.PolicialRepository.GetById(marcacaoEscala.PolicialId);
-            marcacaoEscala.Policial = policial;
-
             var local = await _uof.LocalRepository.GetById(marcacaoEscala.LocalId);
-            marcacaoEscala.Local = local;
 
-            if (policial is null || local is null || escala is null)
-                throw new InvalidOperationException("Dados inválidos");
+            var responseDTO = new MarcacaoEscalaDTOResponse(marcacaoEscala);
+            responseDTO.PolicialNome = policial.Nome;
+            responseDTO.DataHoraEntrada = escala.DataHoraEntrada;
+            responseDTO.DataHoraSaida = escala.DataHoraSaida;
+            responseDTO.LocalNome = local.Nome;
 
-            return marcacaoEscala;
+            return responseDTO;
         }
 
         private async Task<bool> ExisteMarcacaoDuplicada(int policialId, int escalaId, int id){
@@ -104,8 +109,8 @@ namespace EscalaSegurancaAPI.Services
                 marcacoes = marcacoes.Where(m => m.MarcacaoEscalaId != id);
 
             var result = marcacoes.Any(m => 
-                (m.Escala.DataHoraEntrada <= escala.DataHoraEntrada && m.Escala.DataHoraSaida >= escala.DataHoraEntrada) || 
-                (m.Escala.DataHoraEntrada <= escala.DataHoraSaida && m.Escala.DataHoraSaida >= escala.DataHoraSaida)
+                (m.DataHoraEntrada <= escala.DataHoraEntrada && m.DataHoraSaida >= escala.DataHoraEntrada) || 
+                (m.DataHoraEntrada <= escala.DataHoraSaida && m.DataHoraSaida >= escala.DataHoraSaida)
             );
 
             return result;

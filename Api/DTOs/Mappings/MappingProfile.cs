@@ -15,5 +15,7 @@ public class MappingProfile : Profile
         CreateMap<Escala, InativadoDTOPatch>().ReverseMap();
         CreateMap<Local, InativadoDTOPatch>().ReverseMap();
         CreateMap<MarcacaoEscala, InativadoDTOPatch>().ReverseMap();
+        CreateMap<MarcacaoEscala, MarcacaoEscalaDTOResponse>().ReverseMap();
+        CreateMap<MarcacaoEscalaDTO, MarcacaoEscalaDTOResponse>().ReverseMap();
     }
 }

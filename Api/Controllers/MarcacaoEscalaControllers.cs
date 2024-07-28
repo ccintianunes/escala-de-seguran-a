@@ -28,14 +28,12 @@ namespace EscalaSeguranca.Controllers
 
         // GET: api/MarcacaoEscala
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<MarcacaoEscalaDTO>>> Get()
+        public async Task<ActionResult<IEnumerable<MarcacaoEscalaDTOResponse>>> Get()
         {
             try
             {
                 var marcacoesEscala = await _service.GetAll();
-                var marcacoesEscalaDTO = _mapper.Map<IEnumerable<MarcacaoEscalaDTO>>(marcacoesEscala);
-
-                return Ok(marcacoesEscalaDTO);
+                return Ok(marcacoesEscala);
             }
             catch (ArgumentNullException)
             {
@@ -50,14 +48,12 @@ namespace EscalaSeguranca.Controllers
 
         // GET: api/MarcacaoEscala/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<MarcacaoEscalaDTO>> Get(int id)
+        public async Task<ActionResult<MarcacaoEscalaDTOResponse>> Get(int id)
         {
             try
             {
                 var marcacaoEscala = await _service.GetById(id);
-                var marcacaoEscalaDTO = _mapper.Map<MarcacaoEscalaDTO>(marcacaoEscala);
-
-                return Ok(marcacaoEscalaDTO);
+                return Ok(marcacaoEscala);
             }
             catch (ArgumentNullException)
             {
@@ -108,9 +104,10 @@ namespace EscalaSeguranca.Controllers
             try
             {
                 var marcacaoEscalaExistente = await _service.GetById(id);
-                var marcacaoEscala = _mapper.Map(marcacaoEscalaDTO, marcacaoEscalaExistente);
-
-                var sucesso = await _service.Update(marcacaoEscala);
+                var marcacaoEscala = _mapper.Map<MarcacaoEscala>(marcacaoEscalaExistente);
+                var m = _mapper.Map(marcacaoEscalaDTO, marcacaoEscala);
+                
+                var sucesso = await _service.Update(m);
 
                 if (!sucesso)
                     return StatusCode(500, "Erro ao atualizar a marcação de escala.");
@@ -141,7 +138,8 @@ namespace EscalaSeguranca.Controllers
             try
             {
                 var marcacaoEscala = await _service.GetById(id);
-                _service.Delete(marcacaoEscala);
+                var m = _mapper.Map<MarcacaoEscala>(marcacaoEscala);
+                _service.Delete(m);
 
                 return Ok(marcacaoEscala);
             }
@@ -158,11 +156,11 @@ namespace EscalaSeguranca.Controllers
 
         // GET: api/MarcacaoEscala/pagination
         [HttpGet("pagination")]
-        public async Task<ActionResult<IEnumerable<MarcacaoEscalaDTO>>> Get([FromQuery] PagedParameters parameters)
+        public async Task<ActionResult<IEnumerable<MarcacaoEscalaDTOResponse>>> Get([FromQuery] PagedParameters parameters)
         {
             try
             {
-                PagedList<MarcacaoEscala> marcacoesEscala = await _service.GetAll(parameters);
+                PagedList<MarcacaoEscalaDTOResponse> marcacoesEscala = await _service.GetAll(parameters);
                 return ObterMarcacoesEscala(marcacoesEscala);
             }
             catch (ArgumentNullException)
@@ -178,14 +176,15 @@ namespace EscalaSeguranca.Controllers
 
         // GET: api/MarcacaoEscala/5/UpdatePartial
         [HttpPatch("{id}/UpdatePartial")]
-        public async Task<ActionResult<EscalaDTO>> Patch(int id, JsonPatchDocument<InativadoDTOPatch> patchDTO)
+        public async Task<ActionResult<MarcacaoEscalaDTO>> Patch(int id, JsonPatchDocument<InativadoDTOPatch> patchDTO)
         {
             if (patchDTO is null)
                 return BadRequest();
 
             try
             {
-                var marcacao = await _service.GetById(id);
+                var marcacaoDTOResponse = await _service.GetById(id);
+                var marcacao = _mapper.Map<MarcacaoEscala>(marcacaoDTOResponse);
                 var marcacaoUpdateRequest = _mapper.Map<InativadoDTOPatch>(marcacao);
                 patchDTO.ApplyTo(marcacaoUpdateRequest, ModelState);
 
@@ -212,7 +211,7 @@ namespace EscalaSeguranca.Controllers
             }
         }
 
-        private ActionResult<IEnumerable<MarcacaoEscalaDTO>> ObterMarcacoesEscala(PagedList<MarcacaoEscala> marcacoesEscala)
+        private ActionResult<IEnumerable<MarcacaoEscalaDTOResponse>> ObterMarcacoesEscala(PagedList<MarcacaoEscalaDTOResponse> marcacoesEscala)
         {
             var metadata = new
             {
@@ -225,8 +224,7 @@ namespace EscalaSeguranca.Controllers
             };
             Response.Headers.Append("X-Pagination", JsonConvert.SerializeObject(metadata));
 
-            var marcacoesEscalaDTO = _mapper.Map<IEnumerable<MarcacaoEscalaDTO>>(marcacoesEscala);
-            return Ok(marcacoesEscalaDTO);
+            return Ok(marcacoesEscala);
         }
 
     }
