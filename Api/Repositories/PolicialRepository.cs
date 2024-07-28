@@ -10,4 +10,10 @@ namespace EscalaSeguranca.Repositories;
         {
 
         }        
+
+        public async Task<bool> IsCPFDuplicated(string CPF)
+        {
+            var policiais = await GetAll();
+            return policiais.Any(p => p.CPF == CPF);
+        }
     }

@@ -1,11 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
 using AutoMapper;
 using EscalaSeguranca.Repositories;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using EscalaSegurancaAPI.DTOs;
 using EscalaSegurancaAPI.Filters;
 using Newtonsoft.Json;
+using EscalaSegurancaAPI.Models;
+using EscalaSegurancaAPI.Services;
+using Microsoft.AspNetCore.JsonPatch;
 
 namespace EscalaSeguranca.Controllers
 {
@@ -13,30 +14,30 @@ namespace EscalaSeguranca.Controllers
     [ApiController]
     public class MarcacaoEscalaController : ControllerBase
     {
-        private readonly IUnitOfWork _uof;
+        private readonly IMarcacaoEscalaService _service;
         private readonly IMapper _mapper;
         private readonly ILogger<MarcacaoEscalaController> _logger;
 
-        public MarcacaoEscalaController(IUnitOfWork uof,
+        public MarcacaoEscalaController(IMarcacaoEscalaService service,
             IMapper mapper, ILogger<MarcacaoEscalaController> logger)
         {
-            _uof = uof;
+            _service = service;
             _mapper = mapper;
             _logger = logger;
         }
 
         // GET: api/MarcacaoEscala
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<MarcacaoEscalaDTO>>> Get()
+        public async Task<ActionResult<IEnumerable<MarcacaoEscalaDTOResponse>>> Get()
         {
             try
             {
-            var marcacoesEscala = await _uof.MarcacaoEscalaRepository.GetAll();
-            if (marcacoesEscala == null)
-                return NotFound("Não existem marcações de escala.");
-
-            var marcacoesEscalaDTO = _mapper.Map<IEnumerable<MarcacaoEscalaDTO>>(marcacoesEscala);
-            return Ok(marcacoesEscalaDTO);
+                var marcacoesEscala = await _service.GetAll();
+                return Ok(marcacoesEscala);
+            }
+            catch (ArgumentNullException)
+            {
+                return NotFound("Não existem marcações.");
             }
             catch (Exception e)
             {
@@ -47,19 +48,16 @@ namespace EscalaSeguranca.Controllers
 
         // GET: api/MarcacaoEscala/5
         [HttpGet("{id}")]
-        public ActionResult<MarcacaoEscalaDTO> Get(int id)
+        public async Task<ActionResult<MarcacaoEscalaDTOResponse>> Get(int id)
         {
             try
             {
-            var marcacaoEscala = _uof.MarcacaoEscalaRepository.GetById(id);
-
-            if (marcacaoEscala == null)
-            {
-                return NotFound("Marcação não encontrada...");
+                var marcacaoEscala = await _service.GetById(id);
+                return Ok(marcacaoEscala);
             }
-
-            var marcacaoEscalaDTO = _mapper.Map<MarcacaoEscalaDTO>(marcacaoEscala);
-            return Ok(marcacaoEscalaDTO);
+            catch (ArgumentNullException)
+            {
+                return NotFound("Marcação não encontrada.");
             }
             catch (Exception e)
             {
@@ -70,21 +68,24 @@ namespace EscalaSeguranca.Controllers
 
         // POST: api/MarcacaoEscala
         [HttpPost]
-        public ActionResult<MarcacaoEscalaDTO> Post(MarcacaoEscalaDTO marcacaoEscalaDTO)
+        public async Task<ActionResult<MarcacaoEscalaDTO>> Post(MarcacaoEscalaDTO marcacaoEscalaDTO)
         {
-            if (marcacaoEscalaDTO == null)
+            if (marcacaoEscalaDTO is null)
                 return BadRequest("Dados inválidos.");
             try
             {
-            var marcacaoEscala = _mapper.Map<MarcacaoEscala>(marcacaoEscalaDTO);
-            var sucesso = _uof.MarcacaoEscalaRepository.Add(marcacaoEscala);
-            _uof.Complete();
+                MarcacaoEscala marcacaoEscala = _mapper.Map<MarcacaoEscala>(marcacaoEscalaDTO);
+                var sucesso = await _service.Create(marcacaoEscala);
 
-            if (!sucesso)
-                return StatusCode(500, "Erro ao criar marcação.");
+                if (!sucesso)
+                    return StatusCode(500, "Erro ao criar marcação.");
 
-            return CreatedAtAction(nameof(Get),
-                new { id = marcacaoEscala.MarcacaoEscalaId }, marcacaoEscalaDTO);
+                return CreatedAtAction(nameof(Get),
+                    new { id = marcacaoEscala.MarcacaoEscalaId }, marcacaoEscalaDTO);
+            }
+            catch (InvalidOperationException)
+            {
+                return BadRequest("Conflito de escala.");
             }
             catch (Exception e)
             {
@@ -95,21 +96,18 @@ namespace EscalaSeguranca.Controllers
 
         // PUT: api/MarcacaoEscala/5
         [HttpPut("{id}")]
-        public IActionResult Put(int id, MarcacaoEscalaDTO marcacaoEscalaDTO)
+        public async Task<IActionResult> Put(int id, MarcacaoEscalaDTO marcacaoEscalaDTO)
         {
             if (id != marcacaoEscalaDTO.MarcacaoEscalaId)
                 return BadRequest("Dados inválidos.");
 
             try
             {
-                var marcacaoEscalaExistente = _uof.MarcacaoEscalaRepository.GetById(id);
-                if (marcacaoEscalaExistente == null)
-                    return NotFound("Marcação de escala não encontrada...");
-
-                var marcacaoEscala = _mapper.Map(marcacaoEscalaDTO, marcacaoEscalaExistente);
-
-                var sucesso = _uof.MarcacaoEscalaRepository.Update(marcacaoEscala);
-                _uof.Complete();
+                var marcacaoEscalaExistente = await _service.GetById(id);
+                var marcacaoEscala = _mapper.Map<MarcacaoEscala>(marcacaoEscalaExistente);
+                var m = _mapper.Map(marcacaoEscalaDTO, marcacaoEscala);
+                
+                var sucesso = await _service.Update(m);
 
                 if (!sucesso)
                     return StatusCode(500, "Erro ao atualizar a marcação de escala.");
@@ -117,6 +115,14 @@ namespace EscalaSeguranca.Controllers
                 var marcacaoEscalaAtualizadaDto = _mapper.Map<MarcacaoEscalaDTO>(marcacaoEscala);
 
                 return Ok(marcacaoEscalaAtualizadaDto);
+            }
+            catch (ArgumentNullException)
+            {
+                return NotFound("Marcação de escala não encontrada.");
+            }
+            catch (InvalidOperationException)
+            {
+                return BadRequest("Conflito de escala.");
             }
             catch (Exception e)
             {
@@ -127,20 +133,19 @@ namespace EscalaSeguranca.Controllers
 
         // DELETE: api/MarcacaoEscala/5
         [HttpDelete("{id}")]
-        public IActionResult Delete(int id)
+        public async Task<IActionResult> Delete(int id)
         {
             try
             {
-            var marcacaoEscala = _uof.MarcacaoEscalaRepository.GetById(id);
-            if (marcacaoEscala == null)
-            {
-                return NotFound();
+                var marcacaoEscala = await _service.GetById(id);
+                var m = _mapper.Map<MarcacaoEscala>(marcacaoEscala);
+                _service.Delete(m);
+
+                return Ok(marcacaoEscala);
             }
-
-            _uof.MarcacaoEscalaRepository.Remove(marcacaoEscala);
-            _uof.Complete();
-
-            return Ok(marcacaoEscala);
+            catch (ArgumentNullException)
+            {
+                return NotFound("Marcação de escala não encontrada.");
             }
             catch (Exception e)
             {
@@ -151,15 +156,16 @@ namespace EscalaSeguranca.Controllers
 
         // GET: api/MarcacaoEscala/pagination
         [HttpGet("pagination")]
-        public ActionResult<IEnumerable<MarcacaoEscalaDTO>> Get([FromQuery] PagedParameters parameters)
+        public async Task<ActionResult<IEnumerable<MarcacaoEscalaDTOResponse>>> Get([FromQuery] PagedParameters parameters)
         {
             try
             {
-                PagedList<MarcacaoEscala> marcacoesEscala = _uof.MarcacaoEscalaRepository.Get(parameters);
-                if (marcacoesEscala == null)
-                    return NotFound("Não existem marcações de escala.");
-
+                PagedList<MarcacaoEscalaDTOResponse> marcacoesEscala = await _service.GetAll(parameters);
                 return ObterMarcacoesEscala(marcacoesEscala);
+            }
+            catch (ArgumentNullException)
+            {
+                return NotFound("Não existem marcações de escala.");
             }
             catch (Exception e)
             {
@@ -168,7 +174,44 @@ namespace EscalaSeguranca.Controllers
             }
         }
 
-        private ActionResult<IEnumerable<MarcacaoEscalaDTO>> ObterMarcacoesEscala(PagedList<MarcacaoEscala> marcacoesEscala)
+        // GET: api/MarcacaoEscala/5/UpdatePartial
+        [HttpPatch("{id}/UpdatePartial")]
+        public async Task<ActionResult<MarcacaoEscalaDTO>> Patch(int id, JsonPatchDocument<InativadoDTOPatch> patchDTO)
+        {
+            if (patchDTO is null)
+                return BadRequest();
+
+            try
+            {
+                var marcacaoDTOResponse = await _service.GetById(id);
+                var marcacao = _mapper.Map<MarcacaoEscala>(marcacaoDTOResponse);
+                var marcacaoUpdateRequest = _mapper.Map<InativadoDTOPatch>(marcacao);
+                patchDTO.ApplyTo(marcacaoUpdateRequest, ModelState);
+
+                if(!(ModelState.IsValid || TryValidateModel(marcacaoUpdateRequest)))
+                    return BadRequest(ModelState);
+                
+                _mapper.Map(marcacaoUpdateRequest, marcacao);
+                await _service.Update(marcacao);
+
+                return Ok(_mapper.Map<InativadoDTOPatch>(marcacao));
+            }
+            catch (ArgumentNullException)
+            {
+                return NotFound("Marcação não encontrada.");
+            }
+            catch (InvalidOperationException)
+            {
+                return BadRequest("Conflito de escala.");
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Erro ao inativar marcacao.");
+                return StatusCode(500);
+            }
+        }
+
+        private ActionResult<IEnumerable<MarcacaoEscalaDTOResponse>> ObterMarcacoesEscala(PagedList<MarcacaoEscalaDTOResponse> marcacoesEscala)
         {
             var metadata = new
             {
@@ -181,8 +224,7 @@ namespace EscalaSeguranca.Controllers
             };
             Response.Headers.Append("X-Pagination", JsonConvert.SerializeObject(metadata));
 
-            var marcacoesEscalaDTO = _mapper.Map<IEnumerable<MarcacaoEscalaDTO>>(marcacoesEscala);
-            return Ok(marcacoesEscalaDTO);
+            return Ok(marcacoesEscala);
         }
 
     }

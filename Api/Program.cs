@@ -3,6 +3,7 @@ using ApiCatalogo.Context;
 using EscalaSeguranca.Repositories;
 using EscalaSegurancaAPI.DTOs.Mappings;
 using EscalaSegurancaAPI.Repositories;
+using EscalaSegurancaAPI.Services;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -22,7 +23,7 @@ builder.Services.AddCors(options =>
 builder.Services.AddControllers().AddJsonOptions(options =>
 {
     options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
-});
+}).AddNewtonsoftJson();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -41,6 +42,11 @@ builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 
 builder.Services.AddAutoMapper(typeof(MappingProfile));
+
+builder.Services.AddTransient<IPolicialService, PolicialService>();
+builder.Services.AddTransient<ILocalService, LocalService>();
+builder.Services.AddTransient<IEscalaService, EscalaService>();
+builder.Services.AddTransient<IMarcacaoEscalaService, MarcacaoEscalaService>();
 
 // Adiciona o serviço de logging
 builder.Services.AddLogging();
