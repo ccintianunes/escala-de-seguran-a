@@ -87,6 +87,10 @@ namespace EscalaSeguranca.Controllers
                 return CreatedAtAction(nameof(Get),
                     new { id = escala.EscalaId }, escalaDTO);
             }
+            catch (InvalidOperationException)
+            {
+                return BadRequest("Horário de saída deve ser maior que o horário de entrada.");
+            }
             catch (Exception e)
             {
                 _logger.LogError(e, "Erro ao incluir escala.");

@@ -13,6 +13,9 @@ namespace EscalaSegurancaAPI.Services
         }
         public async Task<bool> Create(Escala escala)
         {
+            if (escala.DataHoraSaida <= escala.DataHoraEntrada)
+                throw new InvalidOperationException("Horário de saída deve ser maior que o horário de entrada.");
+
             var sucesso = await _uof.EscalaRepository.Add(escala);
             _uof.Complete();
 
