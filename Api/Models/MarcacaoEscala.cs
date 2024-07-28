@@ -21,6 +21,8 @@ public class MarcacaoEscala
         
         public int LocalId { get; set; }
         
+        public bool? Inativado { get; set; }
+        
         [JsonIgnore]
         public Local? Local { get; set; }
     }

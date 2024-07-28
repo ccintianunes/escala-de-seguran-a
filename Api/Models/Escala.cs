@@ -16,6 +16,8 @@ public class Escala
     [Required]
     public DateTime DataHoraSaida { get; set; }
 
+    public bool? Inativado { get; set; }
+
     [JsonIgnore]
     public ICollection<MarcacaoEscala>? MarcacoesEscala { get; set; }
 

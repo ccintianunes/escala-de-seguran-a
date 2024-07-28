@@ -22,6 +22,8 @@ public class Policial
     [StringLength(20)]
     public string? Telefone { get; set; }
 
+    public bool? Inativado { get; set; }
+
     [JsonIgnore]
     public ICollection<MarcacaoEscala>? MarcacoesEscala { get; set; }
 

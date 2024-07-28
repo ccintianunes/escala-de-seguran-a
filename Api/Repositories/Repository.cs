@@ -16,17 +16,38 @@ public class Repository<T> : IRepository<T> where T : class
 
     public async Task<IEnumerable<T>> GetAll()
     {
-        return await _context.Set<T>().ToListAsync();
+        var entities = await _context.Set<T>().ToListAsync();
+        var propertyInfo = typeof(T).GetProperty("Inativado");
+
+        if (propertyInfo is null)
+            return entities;
+
+        return entities.Where(e => 
+        {
+            var value = propertyInfo.GetValue(e);
+            return value is null || !(bool)value;
+        }).ToList();
     }
 
-    public T GetById(int id)
+    public async Task<T?> GetById(int id)
     {
-        return _context.Set<T>().Find(id);
+        var entity = await _context.Set<T>().FindAsync(id);
+        var propertyInfo = typeof(T).GetProperty("Inativado");
+
+        if (propertyInfo is null)
+            return entity;
+
+        var value = propertyInfo.GetValue(entity);
+
+        if (value != null && (bool)value == true)
+            return null;
+
+        return entity;
     }
 
-    public bool Add(T entity)
+    public async Task<bool> Add(T entity)
     {
-        _context.Set<T>().Add(entity);
+        await _context.Set<T>().AddAsync(entity);
         return true;
     }
 
@@ -41,10 +62,11 @@ public class Repository<T> : IRepository<T> where T : class
         _context.Set<T>().Remove(entity);
     }
 
-    public PagedList<T> Get(PagedParameters parameters)
+    public async Task<PagedList<T>> Get(PagedParameters parameters)
     {
-        IQueryable<T> items = _context.Set<T>().AsNoTracking().AsQueryable();
+        IEnumerable<T> items = await GetAll();
+
         return PagedList<T>
-            .ToPagedList(items, parameters.PageNumber, parameters.PageSize);
+            .ToPagedList(items.AsQueryable(), parameters.PageNumber, parameters.PageSize);
     }
 }

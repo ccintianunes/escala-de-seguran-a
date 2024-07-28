@@ -16,6 +16,8 @@ public class Local
     [Required]
     public string? Descricao { get; set; }
 
+    public bool? Inativado { get; set; }
+    
     [JsonIgnore]
     public ICollection<MarcacaoEscala>? MarcacoesEscala { get; set; }
 

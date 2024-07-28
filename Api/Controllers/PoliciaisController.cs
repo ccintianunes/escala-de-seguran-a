@@ -1,14 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using EscalaSeguranca.Repositories;
 using AutoMapper;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using EscalaSegurancaAPI.DTOs;
 using EscalaSegurancaAPI.Models;
 using EscalaSegurancaAPI.Filters;
 using Newtonsoft.Json;
+using EscalaSegurancaAPI.Services;
+using Microsoft.AspNetCore.JsonPatch;
 
 namespace EscalaSeguranca.Controllers
 {
@@ -16,30 +13,32 @@ namespace EscalaSeguranca.Controllers
     [ApiController]
     public class PolicialController : ControllerBase
     {
-        private readonly IUnitOfWork _uof;
         private readonly IMapper _mapper;
         private readonly ILogger<PolicialController> _logger;
-
-        public PolicialController(IUnitOfWork uof,
-            IMapper mapper, ILogger<PolicialController> logger)
+        private readonly IPolicialService _service;
+        public PolicialController(
+            IMapper mapper, ILogger<PolicialController> logger,
+            IPolicialService service)
         {
-            _uof = uof;
             _mapper = mapper;
             _logger = logger;
+            _service = service;
         }
 
         // GET: api/Policial
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<PolicialDTO>>> Get()
+        public async Task<ActionResult<IEnumerable<PolicialDTO>>> GetAll()
         {
             try
             {
-                var policiais = await _uof.PolicialRepository.GetAll();
-            if (policiais is null)
-                return NotFound("Não existem policials.");
+                var policiais = await _service.GetAll();
+                var policiaisDTO = _mapper.Map<IEnumerable<PolicialDTO>>(policiais);
 
-            var policiaisDTO = _mapper.Map<IEnumerable<PolicialDTO>>(policiais);
-            return Ok(policiaisDTO);
+                return Ok(policiaisDTO);
+            }
+            catch (ArgumentNullException)
+            {
+                return NotFound("Não existem policials.");
             }
             catch (Exception e)
             {
@@ -50,19 +49,18 @@ namespace EscalaSeguranca.Controllers
 
         // GET: api/Policial/5
         [HttpGet("{id}")]
-        public ActionResult<PolicialDTO> Get(int id)
+        public async Task<ActionResult<PolicialDTO>> Get(int id)
         {
             try
             {
-                var policial = _uof.PolicialRepository.GetById(id);
+                var policial = await _service.GetById(id);
+                var policialDTO = _mapper.Map<PolicialDTO>(policial);
 
-            if (policial == null)
-            {
-                return NotFound("Policial não encontrada...");
+                return Ok(policialDTO);
             }
-
-            var policialDTO = _mapper.Map<PolicialDTO>(policial);
-            return Ok(policialDTO);
+            catch (ArgumentNullException)
+            {
+                return NotFound("Policial não encontrado.");
             }
             catch (Exception e)
             {
@@ -73,22 +71,25 @@ namespace EscalaSeguranca.Controllers
 
         // POST: api/Policial
         [HttpPost]
-        public ActionResult<PolicialDTO> Post(PolicialDTO policialDTO)
+        public async Task<ActionResult<PolicialDTO>> Post(PolicialDTO policialDTO)
         {
             if (policialDTO is null)
                 return BadRequest("Dados inválidos.");
 
             try
             {
-            var policial = _mapper.Map<Policial>(policialDTO);
-            var sucesso = _uof.PolicialRepository.Add(policial);
-            _uof.Complete();
+                var policial = _mapper.Map<Policial>(policialDTO);
+                var sucesso = await _service.Create(policial);
 
-            if(!sucesso)
-                return StatusCode(500, "Erro ao criar policial.");
+                if (!sucesso)
+                    return StatusCode(500, "Erro ao criar policial.");
 
-            return CreatedAtAction(nameof(Get),
-                new { id = policial.PolicialId }, policialDTO);
+                return CreatedAtAction(nameof(Get),
+                    new { id = policial.PolicialId }, policialDTO);
+            }
+            catch (InvalidOperationException)
+            {
+                return BadRequest("CPF já cadastrado");
             }
             catch (Exception e)
             {
@@ -99,30 +100,32 @@ namespace EscalaSeguranca.Controllers
 
         // PUT: api/Policial/5
         [HttpPut("{id}")]
-        public IActionResult Put(int id, PolicialDTO policialDTO)
+        public async Task<IActionResult> Put(int id, PolicialDTO policialDTO)
         {
             if (id != policialDTO.PolicialId)
                 return BadRequest("Dados inválidos.");
 
-        try
-        {
-            var policialExistente = _uof.PolicialRepository.GetById(id);
-            if (policialExistente is null)
-                return NotFound("policial não encontrado...");
+            try
+            {
+                var policialExistente = await _service.GetById(id);
+                var policial = _mapper.Map(policialDTO, policialExistente);
+                var sucesso = await _service.Update(policial);
+                if (!sucesso)
+                    return StatusCode(500, "Erro ao atualizar o policial.");
 
-            var policial = _mapper.Map(policialDTO, policialExistente);
+                var policialAtualizadoDto = _mapper.Map<PolicialDTO>(policial);
 
-            var sucesso = _uof.PolicialRepository.Update(policial);
-            _uof.Complete();
-
-            if (!sucesso)
-                return StatusCode(500, "Erro ao atualizar o policial.");
-
-            var policialAtualizadoDto = _mapper.Map < PolicialDTO > (policial);
-
-            return Ok(policialAtualizadoDto);
-        }
-        catch (Exception e)
+                return Ok(policialAtualizadoDto);
+            }
+            catch (ArgumentNullException)
+            {
+                return NotFound("Policial não encontrado.");
+            }
+            catch (InvalidOperationException)
+            {
+                return BadRequest("CPF já cadastrado");
+            }
+            catch (Exception e)
             {
                 _logger.LogError(e, "Erro ao editar policial.");
                 return StatusCode(500);
@@ -131,20 +134,22 @@ namespace EscalaSeguranca.Controllers
 
         // DELETE: api/Policial/5
         [HttpDelete("{id}")]
-        public IActionResult Delete(int id)
+        public async Task<IActionResult> Delete(int id)
         {
             try
             {
-            var policial = _uof.PolicialRepository.GetById(id);
-            if (policial == null)
-            {
-                return NotFound("Policial não encontrado...");
+                var policial = await _service.GetById(id);
+                await _service.Delete(policial);
+
+                return Ok(policial);
             }
-
-            _uof.PolicialRepository.Remove(policial);
-            _uof.Complete();
-
-            return Ok(policial);
+            catch (ArgumentNullException)
+            {
+                return NotFound("Policial não encontrado.");
+            }
+            catch (InvalidOperationException)
+            {
+                return BadRequest("Policial vinculado a uma marcação ativa.");
             }
             catch (Exception e)
             {
@@ -155,19 +160,56 @@ namespace EscalaSeguranca.Controllers
 
         // GET: api/Policial/pagination
         [HttpGet("pagination")]
-        public ActionResult<IEnumerable<PolicialDTO>> Get([FromQuery] PagedParameters parameters)
+        public async Task<ActionResult<IEnumerable<PolicialDTO>>> Get([FromQuery] PagedParameters parameters)
         {
             try
             {
-                PagedList<Policial> policiais = _uof.PolicialRepository.Get(parameters);
-                if (policiais == null)
-                    return NotFound("Não existem policiais.");
-
+                PagedList<Policial> policiais = await _service.GetAll(parameters);
                 return ObterPoliciais(policiais);
+            }
+            catch (ArgumentNullException)
+            {
+                return NotFound("Não existen policiais.");
             }
             catch (Exception e)
             {
-                _logger.LogError(e, "Erro ao buscar escalas.");
+                _logger.LogError(e, "Erro ao buscar policiais.");
+                return StatusCode(500);
+            }
+        }
+
+        // GET: api/Policial/5/UpdatePartial
+        [HttpPatch("{id}/UpdatePartial")]
+        public async Task<ActionResult<PolicialDTO>> Patch(int id, JsonPatchDocument<InativadoDTOPatch> patchPolicialDTO)
+        {
+            if (patchPolicialDTO is null)
+                return BadRequest();
+
+            try
+            {
+                var policial = await _service.GetById(id);
+                var policialUpdateRequest = _mapper.Map<InativadoDTOPatch>(policial);
+                patchPolicialDTO.ApplyTo(policialUpdateRequest, ModelState);
+
+                if(!(ModelState.IsValid || TryValidateModel(policialUpdateRequest)))
+                    return BadRequest(ModelState);
+                
+                _mapper.Map(policialUpdateRequest, policial);
+                await _service.Update(policial);
+
+                return Ok(_mapper.Map<InativadoDTOPatch>(policial));
+            }
+            catch (ArgumentNullException)
+            {
+                return NotFound("Policial não encontrado.");
+            }
+            catch (InvalidOperationException e)
+            {
+                return BadRequest(e.Message);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Erro ao inativar policial.");
                 return StatusCode(500);
             }
         }
