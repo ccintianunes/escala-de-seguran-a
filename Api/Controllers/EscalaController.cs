@@ -1,12 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
 using AutoMapper;
-using EscalaSeguranca.Repositories;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using EscalaSegurancaAPI.DTOs;
 using EscalaSegurancaAPI.Models;
 using EscalaSegurancaAPI.Filters;
 using Newtonsoft.Json;
+using EscalaSegurancaAPI.Services;
+using Microsoft.AspNetCore.JsonPatch;
 
 namespace EscalaSeguranca.Controllers
 {
@@ -14,16 +13,16 @@ namespace EscalaSeguranca.Controllers
     [ApiController]
     public class EscalaController : ControllerBase
     {
-        private readonly IUnitOfWork _uof;
         private readonly IMapper _mapper;
         private readonly ILogger<EscalaController> _logger;
+        private readonly IEscalaService _service;
 
-        public EscalaController(IUnitOfWork uof,
+        public EscalaController(IEscalaService service,
             IMapper mapper, ILogger<EscalaController> logger)
         {
-            _uof = uof;
             _mapper = mapper;
             _logger = logger;
+            _service = service;
         }
 
         // GET: api/Escala
@@ -32,12 +31,14 @@ namespace EscalaSeguranca.Controllers
         {
             try
             {
-            var escalas = await _uof.EscalaRepository.GetAll();
-            if (escalas == null)
-                return NotFound("Não existem escalas.");
+                var escalas = await _service.GetAll();
+                var escalasDTO = _mapper.Map<IEnumerable<EscalaDTO>>(escalas);
 
-            var escalasDTO = _mapper.Map<IEnumerable<EscalaDTO>>(escalas);
-            return Ok(escalasDTO);
+                return Ok(escalasDTO);
+            }
+            catch (ArgumentNullException)
+            {
+                return NotFound("Não existem escalas.");
             }
             catch (Exception e)
             {
@@ -48,19 +49,18 @@ namespace EscalaSeguranca.Controllers
 
         // GET: api/Escala/5
         [HttpGet("{id}")]
-        public ActionResult<EscalaDTO> Get(int id)
+        public async Task<ActionResult<EscalaDTO>> Get(int id)
         {
             try
             {
-            var escala = _uof.EscalaRepository.GetById(id);
+                var escala = await _service.GetById(id);
+                var escalaDTO = _mapper.Map<EscalaDTO>(escala);
 
-            if (escala == null)
-            {
-                return NotFound("Escala não encontrada...");
+                return Ok(escalaDTO);
             }
-
-            var escalaDTO = _mapper.Map<EscalaDTO>(escala);
-            return Ok(escalaDTO);
+            catch (ArgumentNullException)
+            {
+                return NotFound("Escala não encontrada.");
             }
             catch (Exception e)
             {
@@ -71,22 +71,21 @@ namespace EscalaSeguranca.Controllers
 
         // POST: api/Escala
         [HttpPost]
-        public ActionResult<EscalaDTO> Post(EscalaDTO escalaDTO)
+        public async Task<ActionResult<EscalaDTO>> Post(EscalaDTO escalaDTO)
         {
             if (escalaDTO is null)
                 return BadRequest("Dados inválidos.");
 
             try
             {
-            var escala = _mapper.Map<Escala>(escalaDTO);
-            var sucesso = _uof.EscalaRepository.Add(escala);
-            _uof.Complete();
+                var escala = _mapper.Map<Escala>(escalaDTO);
+                var sucesso = await _service.Create(escala);
 
-            if(!sucesso)
-                return StatusCode(500, "Erro ao criar escala.");
+                if (!sucesso)
+                    return StatusCode(500, "Erro ao criar escala.");
 
-            return CreatedAtAction(nameof(Get),
-                new { id = escala.EscalaId }, escalaDTO);
+                return CreatedAtAction(nameof(Get),
+                    new { id = escala.EscalaId }, escalaDTO);
             }
             catch (Exception e)
             {
@@ -97,21 +96,16 @@ namespace EscalaSeguranca.Controllers
 
         // PUT: api/Escala/5
         [HttpPut("{id}")]
-        public IActionResult Put(int id, EscalaDTO escalaDTO)
+        public async Task<IActionResult> Put(int id, EscalaDTO escalaDTO)
         {
             if (id != escalaDTO.EscalaId)
                 return BadRequest("Dados inválidos.");
 
             try
             {
-                var escalaExistente = _uof.EscalaRepository.GetById(id);
-                if (escalaExistente == null)
-                    return NotFound("Escala não encontrada...");
-
+                var escalaExistente = await _service.GetById(id);
                 var escala = _mapper.Map(escalaDTO, escalaExistente);
-
-                var sucesso = _uof.EscalaRepository.Update(escala);
-                _uof.Complete();
+                var sucesso = await _service.Update(escala);
 
                 if (!sucesso)
                     return StatusCode(500, "Erro ao atualizar a escala.");
@@ -119,6 +113,14 @@ namespace EscalaSeguranca.Controllers
                 var escalaAtualizadaDto = _mapper.Map<EscalaDTO>(escala);
 
                 return Ok(escalaAtualizadaDto);
+            }
+            catch (ArgumentNullException)
+            {
+                return NotFound("Escala não encontrada.");
+            }
+            catch (InvalidOperationException)
+            {
+                return BadRequest("Escala possui marcação ativa vinculada.");
             }
             catch (Exception e)
             {
@@ -129,20 +131,22 @@ namespace EscalaSeguranca.Controllers
 
         // DELETE: api/Escala/5
         [HttpDelete("{id}")]
-        public IActionResult Delete(int id)
+        public async Task<IActionResult> Delete(int id)
         {
             try
             {
-            var escala = _uof.EscalaRepository.GetById(id);
-            if (escala == null)
-            {
-                return NotFound("Escala não encontrada...");
+                var escala = await _service.GetById(id);
+                await _service.Delete(escala);
+
+                return Ok(escala);
             }
-
-            _uof.EscalaRepository.Remove(escala);
-            _uof.Complete();
-
-            return Ok(escala);
+            catch (ArgumentNullException)
+            {
+                return NotFound("Escala não encontrada.");
+            }
+            catch (InvalidOperationException)
+            {
+                return BadRequest("Escala possui marcação ativa vinculada.");
             }
             catch (Exception e)
             {
@@ -153,19 +157,56 @@ namespace EscalaSeguranca.Controllers
 
         // GET: api/Escala/pagination
         [HttpGet("pagination")]
-        public ActionResult<IEnumerable<EscalaDTO>> Get([FromQuery] PagedParameters parameters)
+        public async Task<ActionResult<IEnumerable<EscalaDTO>>> Get([FromQuery] PagedParameters parameters)
         {
             try
             {
-                PagedList<Escala> escalas = _uof.EscalaRepository.Get(parameters);
-                if (escalas == null)
-                    return NotFound("Não existem escalas.");
-
+                PagedList<Escala> escalas = await _service.GetAll(parameters);
                 return ObterEscalas(escalas);
+            }
+            catch (ArgumentNullException)
+            {
+                return NotFound("Não existem escalas.");
             }
             catch (Exception e)
             {
                 _logger.LogError(e, "Erro ao buscar escalas.");
+                return StatusCode(500);
+            }
+        }
+
+        // GET: api/Escala/5/UpdatePartial
+        [HttpPatch("{id}/UpdatePartial")]
+        public async Task<ActionResult<EscalaDTO>> Patch(int id, JsonPatchDocument<InativadoDTOPatch> patchDTO)
+        {
+            if (patchDTO is null)
+                return BadRequest();
+
+            try
+            {
+                var escala = await _service.GetById(id);
+                var escalaUpdateRequest = _mapper.Map<InativadoDTOPatch>(escala);
+                patchDTO.ApplyTo(escalaUpdateRequest, ModelState);
+
+                if(!(ModelState.IsValid || TryValidateModel(escalaUpdateRequest)))
+                    return BadRequest(ModelState);
+                
+                _mapper.Map(escalaUpdateRequest, escala);
+                await _service.Update(escala);
+
+                return Ok(_mapper.Map<InativadoDTOPatch>(escala));
+            }
+            catch (ArgumentNullException)
+            {
+                return NotFound("Escala não encontrada.");
+            }
+            catch (InvalidOperationException)
+            {
+                return BadRequest("Escala possui marcação ativa vinculada.");
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Erro ao inativar escala.");
                 return StatusCode(500);
             }
         }

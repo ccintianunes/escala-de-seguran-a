@@ -9,12 +9,14 @@ public class Escala
 {
     [Key]
     public int EscalaId { get; set; }
-    
+
     [Required]
     public DateTime DataHoraEntrada { get; set; }
 
     [Required]
     public DateTime DataHoraSaida { get; set; }
+
+    public bool? Inativado { get; set; }
 
     [JsonIgnore]
     public ICollection<MarcacaoEscala>? MarcacoesEscala { get; set; }

@@ -9,12 +9,14 @@ public class Local
 {
     [Key]
     public int LocalId { get; set; }
-    
+
     [Required]
     public string? Nome { get; set; }
 
     [Required]
     public string? Descricao { get; set; }
+
+    public bool? Inativado { get; set; }
 
     [JsonIgnore]
     public ICollection<MarcacaoEscala>? MarcacoesEscala { get; set; }

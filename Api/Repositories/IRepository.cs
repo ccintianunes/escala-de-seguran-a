@@ -5,9 +5,9 @@ namespace EscalaSeguranca.Repositories;
 public interface IRepository<T> where T : class
 {
     Task<IEnumerable<T>> GetAll();
-    T? GetById(int id);
-    bool Add(T entity);
+    Task<T?> GetById(int id);
+    Task<bool> Add(T entity);
     bool Update(T entity);
     void Remove(T entity);
-    PagedList<T> Get(PagedParameters parameters);
+    Task<PagedList<T>> Get(PagedParameters parameters);
 }

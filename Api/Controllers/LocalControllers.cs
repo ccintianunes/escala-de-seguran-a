@@ -1,12 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
 using AutoMapper;
-using EscalaSeguranca.Repositories;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using EscalaSegurancaAPI.DTOs;
 using EscalaSegurancaAPI.Models;
 using EscalaSegurancaAPI.Filters;
 using Newtonsoft.Json;
+using EscalaSegurancaAPI.Services;
+using System.Data;
+using Microsoft.AspNetCore.JsonPatch;
 
 namespace EscalaSeguranca.Controllers
 {
@@ -14,14 +14,14 @@ namespace EscalaSeguranca.Controllers
     [ApiController]
     public class LocalController : ControllerBase
     {
-        private readonly IUnitOfWork _uof;
         private readonly IMapper _mapper;
         private readonly ILogger<LocalController> _logger;
+        private readonly ILocalService _service;
 
-        public LocalController(IUnitOfWork uof,
+        public LocalController(ILocalService service,
             IMapper mapper, ILogger<LocalController> logger)
         {
-            _uof = uof;
+            _service = service;
             _mapper = mapper;
             _logger = logger;
         }
@@ -32,12 +32,14 @@ namespace EscalaSeguranca.Controllers
         {
             try
             {
-            var locais = await _uof.LocalRepository.GetAll();
-            if (locais == null)
-                return NotFound("Não existem locais.");
+                var locais = await _service.GetAll();
+                var locaisDTO = _mapper.Map<IEnumerable<LocalDTO>>(locais);
 
-            var locaisDTO = _mapper.Map<IEnumerable<LocalDTO>>(locais);
-            return Ok(locaisDTO);
+                return Ok(locaisDTO);
+            }
+            catch (ArgumentNullException)
+            {
+                return NotFound("Não existem locais.");
             }
             catch (Exception e)
             {
@@ -52,15 +54,14 @@ namespace EscalaSeguranca.Controllers
         {
             try
             {
-            var local = _uof.LocalRepository.GetById(id);
+                var local = _service.GetById(id);
+                var localDTO = _mapper.Map<LocalDTO>(local);
 
-            if (local == null)
-            {
-                return NotFound("Local não encontrado...");
+                return Ok(localDTO);
             }
-
-            var localDTO = _mapper.Map<LocalDTO>(local);
-            return Ok(localDTO);
+            catch (ArgumentNullException)
+            {
+                return NotFound("Local não encontrado.");
             }
             catch (Exception e)
             {
@@ -72,22 +73,25 @@ namespace EscalaSeguranca.Controllers
 
         // POST: api/Local
         [HttpPost]
-        public ActionResult<LocalDTO> Post(LocalDTO localDTO)
+        public async Task<ActionResult<LocalDTO>> Post(LocalDTO localDTO)
         {
             if (localDTO == null)
                 return BadRequest("Dados inválidos.");
 
             try
             {
-            var local = _mapper.Map<Local>(localDTO);
-            var sucesso = _uof.LocalRepository.Add(local);
-            _uof.Complete();
+                var local = _mapper.Map<Local>(localDTO);
+                var sucesso = await _service.Create(local);
 
-            if(!sucesso)
-                return StatusCode(500, "Erro ao criar local.");
+                if (!sucesso)
+                    return StatusCode(500, "Erro ao criar local.");
 
-            return CreatedAtAction(nameof(Get),
-                new { id = local.LocalId }, localDTO);
+                return CreatedAtAction(nameof(Get),
+                    new { id = local.LocalId }, localDTO);
+            }
+            catch (InvalidOperationException)
+            {
+                return BadRequest("Local já cadastrado.");
             }
             catch (Exception e)
             {
@@ -98,21 +102,17 @@ namespace EscalaSeguranca.Controllers
 
         // PUT: api/Local/5
         [HttpPut("{id}")]
-        public IActionResult Put(int id, LocalDTO localDTO)
+        public async Task<IActionResult> Put(int id, LocalDTO localDTO)
         {
             if (id != localDTO.LocalId)
                 return BadRequest("Dados inválidos.");
 
             try
             {
-                var localExistente = _uof.LocalRepository.GetById(id);
-                if (localExistente == null)
-                    return NotFound("Local não encontrado...");
-
+                var localExistente = await _service.GetById(id);
                 var local = _mapper.Map(localDTO, localExistente);
 
-                var sucesso = _uof.LocalRepository.Update(local);
-                _uof.Complete();
+                var sucesso = await _service.Update(local);
 
                 if (!sucesso)
                     return StatusCode(500, "Erro ao atualizar o local.");
@@ -120,6 +120,18 @@ namespace EscalaSeguranca.Controllers
                 var localAtualizadoDto = _mapper.Map<LocalDTO>(local);
 
                 return Ok(localAtualizadoDto);
+            }
+            catch (ArgumentNullException)
+            {
+                return NotFound("Local não encontrado.");
+            }
+            catch (DuplicateNameException)
+            {
+                return BadRequest("Local já cadastrado");
+            }
+            catch (InvalidOperationException)
+            {
+                return BadRequest("Local vinculado a uma marcação ativa.");
             }
             catch (Exception e)
             {
@@ -130,20 +142,22 @@ namespace EscalaSeguranca.Controllers
 
         // DELETE: api/Local/5
         [HttpDelete("{id}")]
-        public IActionResult Delete(int id)
+        public async Task<IActionResult> Delete(int id)
         {
             try
             {
-            var local = _uof.LocalRepository.GetById(id);
-            if (local == null)
-            {
-                return NotFound("Local não encontrado...");
+                var local = await _service.GetById(id);
+                await _service.Delete(local);
+
+                return Ok(local);
             }
-
-            _uof.LocalRepository.Remove(local);
-            _uof.Complete();
-
-            return Ok(local);
+            catch (ArgumentNullException)
+            {
+                return NotFound("Local não encontrado.");
+            }
+            catch (InvalidOperationException)
+            {
+                return BadRequest("Local vinculado a uma marcação ativa.");
             }
             catch (Exception e)
             {
@@ -154,19 +168,60 @@ namespace EscalaSeguranca.Controllers
 
         // GET: api/Local/pagination
         [HttpGet("pagination")]
-        public ActionResult<IEnumerable<LocalDTO>> Get([FromQuery] PagedParameters parameters)
+        public async Task<ActionResult<IEnumerable<LocalDTO>>> Get([FromQuery] PagedParameters parameters)
         {
             try
             {
-                PagedList<Local> locais = _uof.LocalRepository.Get(parameters);
-                if (locais == null)
-                    return NotFound("Não existem locais.");
-
+                PagedList<Local> locais = await _service.GetAll(parameters);
                 return ObterLocais(locais);
+            }
+            catch (ArgumentNullException)
+            {
+                return NotFound("Não existem locais.");
             }
             catch (Exception e)
             {
                 _logger.LogError(e, "Erro ao buscar locais.");
+                return StatusCode(500);
+            }
+        }
+
+        // GET: api/Local/5/UpdatePartial
+        [HttpPatch("{id}/UpdatePartial")]
+        public async Task<ActionResult<LocalDTO>> Patch(int id, JsonPatchDocument<InativadoDTOPatch> patchDTO)
+        {
+            if (patchDTO is null)
+                return BadRequest();
+
+            try
+            {
+                var local = await _service.GetById(id);
+                var localUpdateRequest = _mapper.Map<InativadoDTOPatch>(local);
+                patchDTO.ApplyTo(localUpdateRequest, ModelState);
+
+                if(!(ModelState.IsValid || TryValidateModel(localUpdateRequest)))
+                    return BadRequest(ModelState);
+                
+                _mapper.Map(localUpdateRequest, local);
+                await _service.Update(local);
+
+                return Ok(_mapper.Map<InativadoDTOPatch>(local));
+            }
+            catch (ArgumentNullException)
+            {
+                return NotFound("Local não encontrada.");
+            }
+            catch (DuplicateNameException)
+            {
+                return BadRequest("Local já cadastrado");
+            }
+            catch (InvalidOperationException)
+            {
+                return BadRequest("Local vinculado a uma marcação ativa.");
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Erro ao inativar local.");
                 return StatusCode(500);
             }
         }
