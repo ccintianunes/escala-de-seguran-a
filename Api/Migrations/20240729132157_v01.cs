@@ -1,12 +1,13 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
 namespace EscalaSegurancaAPI.Migrations
 {
     /// <inheritdoc />
-    public partial class MigracaoInicial : Migration
+    public partial class v01 : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -15,10 +16,11 @@ namespace EscalaSegurancaAPI.Migrations
                 name: "Escalas",
                 columns: table => new
                 {
-                    EscalaId = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    DataHoraEntrada = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    DataHoraSaida = table.Column<DateTime>(type: "datetime2", nullable: false)
+                    EscalaId = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    DataHoraEntrada = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    DataHoraSaida = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    Inativado = table.Column<bool>(type: "boolean", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -29,10 +31,11 @@ namespace EscalaSegurancaAPI.Migrations
                 name: "Locais",
                 columns: table => new
                 {
-                    LocalId = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Nome = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Descricao = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                    LocalId = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Nome = table.Column<string>(type: "text", nullable: false),
+                    Descricao = table.Column<string>(type: "text", nullable: false),
+                    Inativado = table.Column<bool>(type: "boolean", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -43,11 +46,12 @@ namespace EscalaSegurancaAPI.Migrations
                 name: "Policiais",
                 columns: table => new
                 {
-                    PolicialId = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    CPF = table.Column<string>(type: "nvarchar(11)", maxLength: 11, nullable: false),
-                    Nome = table.Column<string>(type: "nvarchar(80)", maxLength: 80, nullable: false),
-                    Telefone = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false)
+                    PolicialId = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    CPF = table.Column<string>(type: "character varying(11)", maxLength: 11, nullable: false),
+                    Nome = table.Column<string>(type: "character varying(80)", maxLength: 80, nullable: false),
+                    Telefone = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    Inativado = table.Column<bool>(type: "boolean", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -58,11 +62,12 @@ namespace EscalaSegurancaAPI.Migrations
                 name: "Marcacoes",
                 columns: table => new
                 {
-                    MarcacaoEscalaId = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    PolicialId = table.Column<int>(type: "int", nullable: false),
-                    EscalaId = table.Column<int>(type: "int", nullable: false),
-                    LocalId = table.Column<int>(type: "int", nullable: false)
+                    MarcacaoEscalaId = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    PolicialId = table.Column<int>(type: "integer", nullable: false),
+                    EscalaId = table.Column<int>(type: "integer", nullable: false),
+                    LocalId = table.Column<int>(type: "integer", nullable: false),
+                    Inativado = table.Column<bool>(type: "boolean", nullable: true)
                 },
                 constraints: table =>
                 {
