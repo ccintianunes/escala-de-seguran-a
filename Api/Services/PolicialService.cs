@@ -81,6 +81,14 @@ namespace EscalaSegurancaAPI.Services
             return sucesso;
         }
 
+        public async Task<PagedList<Policial>> GetPoliciaisFiltro(PoliciaisFiltro filtro){
+            PagedList<Policial> policiais = await _uof.PolicialRepository.GetPoliciaisFiltro(filtro);
+            if (policiais == null)
+                throw new ArgumentNullException("Não existem policials.");
+
+            return policiais;
+        }
+
         private async Task<bool> isCPFDuplicatedAsync(int id, string CPF)
         {
             var policiais = await this.GetAll();
