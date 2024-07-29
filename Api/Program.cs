@@ -29,10 +29,12 @@ builder.Services.AddControllers().AddJsonOptions(options =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-var connectionString = builder.Configuration.GetConnectionString("SqlServerConnection");
-//-------------> Define o contexto usando a string de conexão
-builder.Services.AddDbContext<AppDbContext>(options => 
-    options.UseSqlServer(connectionString));
+// var connectionString = builder.Configuration.GetConnectionString("SqlServerConnection");
+// //-------------> Define o contexto usando a string de conexão
+// builder.Services.AddDbContext<AppDbContext>(options => 
+//     options.UseSqlServer(connectionString));
+builder.Services.AddEntityFrameworkNpgsql().AddDbContext<AppDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("StringConnection")));
 
 builder.Services.AddScoped<IEscalaRepository, EscalaRepository>();
 builder.Services.AddScoped<IPolicialRepository, PolicialRepository>();

@@ -1,0 +1,22 @@
+version: "3.9"
+
+networks:
+  marcacao-network:
+    name: marcacao
+    external: false
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: postgres-marcacao
+    hostname: postgres-marcacao
+    ports:
+      - 5437:5432
+    networks:
+      - marcacao-network
+    environment:
+      POSTGRES_DB: marcacap
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: 123456
+      TZ: "America/Fortaleza"
+    restart: always
