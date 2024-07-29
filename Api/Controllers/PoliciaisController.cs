@@ -214,6 +214,26 @@ namespace EscalaSeguranca.Controllers
             }
         }
 
+        // GET: api/Policial/filter
+        [HttpGet("filter")]
+        public async Task<ActionResult<IEnumerable<PolicialDTO>>> GetPoliciaisFiltro([FromQuery] PoliciaisFiltro filtro)
+        {
+            try
+            {
+                PagedList<Policial> policiais = await _service.GetPoliciaisFiltro(filtro);
+                return ObterPoliciais(policiais);
+            }
+            catch (ArgumentNullException)
+            {
+                return NotFound("Não existen policiais.");
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Erro ao buscar policiais.");
+                return StatusCode(500);
+            }
+        }
+
         private ActionResult<IEnumerable<PolicialDTO>> ObterPoliciais(PagedList<Policial> policiais)
         {
             var metadata = new
