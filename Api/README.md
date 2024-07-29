@@ -6,7 +6,7 @@ A API do projeto **Escala de Segurança** é responsável por fornecer os servi�
 
 ## Requisitos
 
-- .NET Core 3.1 ou superior
+- .NET Core 8 ou superior
 - SQL Server
 
 ## Configuração e Instalação
